@@ -1,15 +1,12 @@
-/**
- * AQIOM Session Manager - نظام إدارة الجلسات المتقدم
- * 
- * الميزات:
- * - جلسات آمنة مع JWT
- * - تحديث تلقائي للجلسات
- * - إبطال الجلسات عن بعد
- * - تتبع نشاط الجلسات
- */
-
 import jwt from 'jsonwebtoken';
 import { createClient } from '@/lib/supabase/server';
+
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// التحقق من وجود المفتاح - إجباري، ليس تلقائيًا
+if (!JWT_SECRET) {
+  throw new Error('Missing environment variable: JWT_SECRET');
+}
 
 export interface SessionData {
   userId: string;
@@ -27,7 +24,7 @@ export class SessionManager {
   private readonly SESSION_DURATION = 7 * 24 * 60 * 60; // 7 days
 
   constructor() {
-    this.JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
+    this.JWT_SECRET = JWT_SECRET;
   }
 
   async createSession(userId: string, ipAddress: string, userAgent: string): Promise<string> {
@@ -44,7 +41,6 @@ export class SessionManager {
       last_activity: new Date()
     });
     
-    // Create JWT
     const token = jwt.sign(
       { userId, sessionId },
       this.JWT_SECRET,
@@ -69,7 +65,6 @@ export class SessionManager {
         return null;
       }
       
-      // Update last activity
       await supabase
         .from('user_sessions')
         .update({ last_activity: new Date() })
