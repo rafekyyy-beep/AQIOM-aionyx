@@ -1,13 +1,3 @@
-/**
- * AQIOM Notification Service - نظام الإشعارات المتقدم
- * 
- * الميزات:
- * - إشعارات فورية
- * - إشعارات بريد إلكتروني
- * - إشعارات SMS
- * - إشعارات داخل التطبيق
- */
-
 import { createClient } from '@/lib/supabase/client';
 
 export interface Notification {
@@ -23,10 +13,13 @@ export interface Notification {
 
 export class NotificationService {
   private supabase = createClient();
-  
+
+  private isBrowser(): boolean {
+    return typeof window !== 'undefined';
+  }
+
   async sendPushNotification(userId: string, title: string, body: string, data?: Record<string, any>): Promise<void> {
-    // حفظ الإشعار في قاعدة البيانات
-    const { data: notification } = await this.supabase
+    const { data: notification, error } = await this.supabase
       .from('notifications')
       .insert({
         user_id: userId,
@@ -37,32 +30,38 @@ export class NotificationService {
       })
       .select()
       .single();
-    
-    // إرسال إشعار فوري عبر WebSocket
+
+    if (error) {
+      console.error('Failed to save notification:', error);
+      return;
+    }
+
     await this.supabase.channel(`user:${userId}`).send({
       type: 'broadcast',
       event: 'notification',
       payload: notification
     });
-    
-    // إرسال إشعار PWA إذا كان متاحاً
-    this.sendPWANotification(userId, title, body);
+
+    if (this.isBrowser()) {
+      this.sendBrowserNotification(title, body);
+    }
   }
-  
-  private async sendPWANotification(userId: string, title: string, body: string): Promise<void> {
-    // إرسال إشعار عبر Service Worker
+
+  private sendBrowserNotification(title: string, body: string): void {
+    if (!this.isBrowser()) return;
+    
     if ('Notification' in window && Notification.permission === 'granted') {
       new Notification(title, { body });
     }
   }
-  
+
   async markAsRead(notificationId: string): Promise<void> {
     await this.supabase
       .from('notifications')
       .update({ read: true })
       .eq('id', notificationId);
   }
-  
+
   async getUserNotifications(userId: string): Promise<Notification[]> {
     const { data } = await this.supabase
       .from('notifications')
@@ -72,7 +71,7 @@ export class NotificationService {
     
     return data || [];
   }
-  
+
   async getUnreadCount(userId: string): Promise<number> {
     const { count } = await this.supabase
       .from('notifications')
@@ -82,10 +81,11 @@ export class NotificationService {
     
     return count || 0;
   }
-  
+
   async requestNotificationPermission(): Promise<boolean> {
+    if (!this.isBrowser()) return false;
+    
     if (!('Notification' in window)) {
-      console.log('هذا المتصفح لا يدعم الإشعارات');
       return false;
     }
     
