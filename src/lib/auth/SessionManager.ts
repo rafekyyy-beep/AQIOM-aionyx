@@ -1,11 +1,11 @@
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// التحقق من وجود المفتاح - إجباري، ليس تلقائيًا
 if (!JWT_SECRET) {
-  throw new Error('Missing environment variable: JWT_SECRET');
+  throw new Error('Missing JWT_SECRET');
 }
 
 export interface SessionData {
@@ -21,7 +21,7 @@ export interface SessionData {
 
 export class SessionManager {
   private readonly JWT_SECRET: string;
-  private readonly SESSION_DURATION = 7 * 24 * 60 * 60; // 7 days
+  private readonly SESSION_DURATION = 7 * 24 * 60 * 60;
 
   constructor() {
     this.JWT_SECRET = JWT_SECRET;
@@ -55,13 +55,13 @@ export class SessionManager {
       const decoded = jwt.verify(token, this.JWT_SECRET) as any;
       
       const supabase = await createClient();
-      const { data: session } = await supabase
+      const { data: session, error } = await supabase
         .from('user_sessions')
         .select('*')
         .eq('session_token', decoded.sessionId)
         .single();
       
-      if (!session || new Date(session.expires_at) < new Date()) {
+      if (error || !session || new Date(session.expires_at) < new Date()) {
         return null;
       }
       
