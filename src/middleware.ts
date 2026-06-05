@@ -1,6 +1,24 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+// المسارات المحمية
+const PROTECTED_PATHS = [
+  '/dashboard',
+  '/chat',
+  '/projects',
+  '/analytics',
+  '/memory',
+  '/notifications',
+  '/profile',
+  '/settings',
+  '/files',
+  '/tasks',
+  '/rooms',
+];
+
+// المسارات العامة (للمستخدمين غير المسجلين)
+const AUTH_PATHS = ['/login', '/register'];
+
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
     request: {
@@ -27,14 +45,17 @@ export async function middleware(request: NextRequest) {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
+  const path = request.nextUrl.pathname;
 
-  // protected routes
-  if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
+  // التحقق من المسارات المحمية
+  const isProtectedPath = PROTECTED_PATHS.some(p => path.startsWith(p));
+  const isAuthPath = AUTH_PATHS.some(p => path === p);
+
+  if (isProtectedPath && !user) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // auth routes - redirect if logged in
-  if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/register')) {
+  if (isAuthPath && user) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
