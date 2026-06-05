@@ -1,12 +1,3 @@
-/**
- * AQIOM Advanced Cache - نظام التخزين المؤقت المتقدم
- * 
- * الميزات:
- * - تخزين مؤقت متعدد المستويات
- * - تحديث تلقائي
- * - إبطال ذكي
- */
-
 export interface CacheEntry<T> {
   key: string;
   value: T;
@@ -16,8 +7,8 @@ export interface CacheEntry<T> {
 }
 
 export class AdvancedCache {
-  private memoryCache: Map<string, CacheEntry<any>> = new Map();
-  private readonly DEFAULT_TTL = 300; // 5 minutes
+  private memoryCache: Map<string, CacheEntry<unknown>> = new Map();
+  private readonly DEFAULT_TTL = 300;
   
   set<T>(key: string, value: T, ttlSeconds: number = this.DEFAULT_TTL, tags: string[] = []): void {
     const entry: CacheEntry<T> = {
@@ -28,7 +19,7 @@ export class AdvancedCache {
       tags
     };
     
-    this.memoryCache.set(key, entry);
+    this.memoryCache.set(key, entry as CacheEntry<unknown>);
     this.invalidateByTags(tags);
   }
   
@@ -42,7 +33,7 @@ export class AdvancedCache {
       return null;
     }
     
-    return entry.value as T;
+    return (entry as CacheEntry<T>).value;
   }
   
   delete(key: string): void {
