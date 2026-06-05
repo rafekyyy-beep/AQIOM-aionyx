@@ -1,0 +1,33 @@
+{
+  "common": {
+    "welcome": "Welcome",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Retry",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit"
+  },
+  "chat": {
+    "placeholder": "Ask anything...",
+    "send": "Send",
+    "typing": "Typing...",
+    "newChat": "New chat",
+    "deleteChat": "Delete chat"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "username": "Username"
+  },
+  "sidebar": {
+    "conversations": "Conversations",
+    "projects": "Projects",
+    "memories": "Memory",
+    "settings": "Settings"
+  }
+}
