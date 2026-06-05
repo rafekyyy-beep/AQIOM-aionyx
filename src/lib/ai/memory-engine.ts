@@ -31,12 +31,29 @@ export class MemoryEngine {
     if (error) throw error;
   }
 
-  async deleteMemory(memoryId: string): Promise<void> {
+  // ✅ إصلاح: إضافة التحقق من userId
+  async deleteMemory(memoryId: string, userId: string): Promise<void> {
     const supabase = await createClient();
+    
+    // ✅ التحقق من أن الذكر تخص المستخدم قبل الحذف
     const { error } = await supabase
       .from('memories')
       .delete()
-      .eq('id', memoryId);
+      .eq('id', memoryId)
+      .eq('user_id', userId);  // ← هذا يمنع IDOR
+
+    if (error) throw error;
+  }
+
+  // ✅ إضافة دالة لتحديث الذاكرة مع التحقق من الملكية
+  async updateMemory(memoryId: string, userId: string, key: string, value: string): Promise<void> {
+    const supabase = await createClient();
+    
+    const { error } = await supabase
+      .from('memories')
+      .update({ key, value })
+      .eq('id', memoryId)
+      .eq('user_id', userId);
 
     if (error) throw error;
   }
